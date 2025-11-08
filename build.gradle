@@ -13,17 +13,37 @@ java {
 		languageVersion = JavaLanguageVersion.of(21)
 	}
 }
+// Configuración para que Lombok funcione correctamente con Gradle
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
 
 repositories {
 	mavenCentral()
 }
 
 dependencies {
+    // Spring Boot Starter Web: Para construir APIs REST
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Spring Boot Starter Data JPA: Para acceso a datos y ORM
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // H2 Database: Base de datos en memoria (solo en tiempo de ejecución)
+    runtimeOnly 'com.h2database:h2'
+
+    // Lombok: Para reducir código boilerplate
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+
+    // Spring Boot Starter Test: Para pruebas (solo en tiempo de compilación/ejecución de tests)
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
-
+// Configuración para que Gradle use JUnit 5 para las pruebas
 tasks.named('test') {
 	useJUnitPlatform()
 }
