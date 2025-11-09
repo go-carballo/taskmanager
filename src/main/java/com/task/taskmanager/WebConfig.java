@@ -1,4 +1,4 @@
-package com.example.todo;
+package com.task.taskmanager;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
