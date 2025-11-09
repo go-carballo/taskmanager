@@ -1,17 +1,17 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.6'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.6'
 }
 
-group = 'com.task'
+group = 'com.example'
 version = '0.0.1-SNAPSHOT'
-description = 'Task manager using Spring Boot'
+description = 'Aplicación TODO List con Spring Boot'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 // Configuración para que Lombok funcione correctamente con Gradle
 configurations {
@@ -21,7 +21,7 @@ configurations {
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
@@ -45,5 +45,5 @@ dependencies {
 }
 // Configuración para que Gradle use JUnit 5 para las pruebas
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
