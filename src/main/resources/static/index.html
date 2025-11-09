@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TODO List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 min-h-screen">
+    <div class="max-w-3xl mx-auto py-10 px-4">
+      <header class="mb-8 text-center">
+        <h1 class="text-4xl font-bold text-slate-800">TODO List</h1>
+        <p class="text-slate-600">Organiza tus tareas diarias con esta aplicación full-stack.</p>
+      </header>
+
+      <section class="bg-white shadow rounded-lg p-6 mb-8">
+        <form id="task-form" class="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <input
+            id="description"
+            name="description"
+            type="text"
+            required
+            placeholder="Describe tu tarea"
+            class="flex-1 rounded-md border border-slate-300 px-4 py-2 focus:border-indigo-500 focus:outline-none"
+          />
+          <button
+            type="submit"
+            class="rounded-md bg-indigo-600 px-6 py-2 text-white font-semibold shadow hover:bg-indigo-700 transition"
+          >
+            Añadir
+          </button>
+        </form>
+      </section>
+
+      <section class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-semibold text-slate-800">Tus tareas</h2>
+          <button
+            id="refresh-btn"
+            class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+          >
+            Recargar
+          </button>
+        </div>
+        <ul id="task-list" class="space-y-3">
+          <li id="empty-state" class="text-slate-500">No hay tareas registradas todavía.</li>
+        </ul>
+      </section>
+    </div>
+
+    <template id="task-template">
+      <li class="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+        <div class="flex items-center gap-3">
+          <input type="checkbox" class="task-completed h-5 w-5 rounded border-slate-300" />
+          <span class="task-description text-slate-800"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="task-date text-xs text-slate-500"></span>
+          <button
+            class="delete-btn rounded-md bg-rose-500 px-3 py-1 text-sm text-white hover:bg-rose-600"
+          >
+            Eliminar
+          </button>
+        </div>
+      </li>
+    </template>
+
+    <script>
+      const API_BASE_URL = "/api/v1/tasks";
+      const taskForm = document.getElementById("task-form");
+      const descriptionInput = document.getElementById("description");
+      const taskList = document.getElementById("task-list");
+      const emptyState = document.getElementById("empty-state");
+      const refreshBtn = document.getElementById("refresh-btn");
+      const template = document.getElementById("task-template");
+
+      async function fetchTasks() {
+        try {
+          const response = await fetch(API_BASE_URL);
+          if (!response.ok) {
+            throw new Error("No se pudieron cargar las tareas");
+          }
+          const tasks = await response.json();
+          renderTasks(tasks);
+        } catch (error) {
+          console.error(error);
+          alert("Error al cargar las tareas. Revisa la consola para más detalles.");
+        }
+      }
+
+      function renderTasks(tasks) {
+        taskList.innerHTML = "";
+        if (!tasks.length) {
+          taskList.appendChild(emptyState);
+          emptyState.classList.remove("hidden");
+          return;
+        }
+        emptyState.classList.add("hidden");
+
+        const fragment = document.createDocumentFragment();
+        tasks
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .forEach((task) => {
+            const taskItem = template.content.cloneNode(true);
+            const listItem = taskItem.querySelector("li");
+            const checkbox = taskItem.querySelector(".task-completed");
+            const description = taskItem.querySelector(".task-description");
+            const deleteBtn = taskItem.querySelector(".delete-btn");
+            const dateLabel = taskItem.querySelector(".task-date");
+
+            checkbox.checked = task.completed;
+            description.textContent = task.description;
+            description.classList.toggle("line-through", task.completed);
+            description.classList.toggle("text-slate-400", task.completed);
+            dateLabel.textContent = new Date(task.createdAt).toLocaleString();
+
+            checkbox.addEventListener("change", () => updateTask(task.id, {
+              ...task,
+              completed: checkbox.checked,
+            }));
+
+            deleteBtn.addEventListener("click", () => deleteTask(task.id));
+
+            fragment.appendChild(taskItem);
+          });
+
+        taskList.appendChild(fragment);
+      }
+
+      async function createTask(description) {
+        const payload = {
+          description,
+          completed: false,
+        };
+        const response = await fetch(API_BASE_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          throw new Error("No se pudo crear la tarea");
+        }
+        return response.json();
+      }
+
+      async function updateTask(id, task) {
+        const response = await fetch(`${API_BASE_URL}/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(task),
+        });
+        if (!response.ok) {
+          alert("No se pudo actualizar la tarea");
+          return;
+        }
+        fetchTasks();
+      }
+
+      async function deleteTask(id) {
+        const confirmDelete = confirm("¿Eliminar esta tarea?");
+        if (!confirmDelete) return;
+        const response = await fetch(`${API_BASE_URL}/${id}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) {
+          alert("No se pudo eliminar la tarea");
+          return;
+        }
+        fetchTasks();
+      }
+
+      taskForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const description = descriptionInput.value.trim();
+        if (!description) {
+          alert("La descripción no puede estar vacía");
+          return;
+        }
+        try {
+          await createTask(description);
+          descriptionInput.value = "";
+          fetchTasks();
+        } catch (error) {
+          console.error(error);
+          alert("No se pudo crear la tarea");
+        }
+      });
+
+      refreshBtn.addEventListener("click", fetchTasks);
+
+      document.addEventListener("DOMContentLoaded", fetchTasks);
+    </script>
+  </body>
+</html>
